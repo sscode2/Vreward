@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Short Video Rewards</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --dark-bg: #1a1a1a;
+            --dark-card: #2c2c2c;
+            --text-color: #f0f0f0;
+            --accent-color: #e91e63;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --border-radius: 12px;
+            --transition-speed: 0.3s ease-in-out;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            overflow: hidden; /* For scroll snap */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Scroll Snap for Video Feed */
+        .video-feed {
+            height: calc(100vh - 60px); /* Adjust based on top bar height */
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .video-container {
+            height: 100%;
+            width: 100%;
+            scroll-snap-align: start;
+            position: relative;
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .loading-spinner {
+            border: 4px solid var(--glass-border);
+            border-top: 4px solid var(--accent-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            z-index: 10;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Top Profile Bar */
+        .top-bar {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px 15px;
+            height: 60px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .top-bar-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.8em;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: var(--transition-speed);
+        }
+
+        .top-bar-item:hover {
+            color: var(--accent-color);
+        }
+
+        .top-bar-item .value {
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 2px;
+        }
+
+        .progress-bar-container {
+            width: 100px;
+            height: 8px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--accent-color);
+            border-radius: 5px;
+            transition: width var(--transition-speed);
+        }
+
+        /* Video Action Bar */
+        .action-bar {
+            position: absolute;
+            right: 15px;
+            bottom: 20%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 50;
+        }
+
+        .action-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-color);
+            font-size: 0.7em;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .action-item:hover {
+            transform: scale(1.1);
+        }
+
+        .action-item i {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .action-item.liked i {
+            color: var(--accent-color);
+        }
+
+        /* Login/Auth UI */
+        .auth-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--dark-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            flex-direction: column;
+        }
+
+        .auth-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .auth-card h2 {
+            margin-bottom: 25px;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .auth-card input {
+            width: calc(100% - 20px);
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid var(--glass-border);
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-color);
+            border-radius: 8px;
+            font-size: 1em;
+            outline: none;
+            transition: border-color var(--transition-speed);
+        }
+
+        .auth-card input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .auth-card input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .auth-card button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-speed);
+        }
+
+        .auth-card .btn-primary {
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        .auth-card .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .auth-card .btn-google {
+            background-color: #4285F4;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .auth-card .btn-google img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .auth-card .btn-google:hover {
+            opacity: 0.9;
+        }
+
+        .auth-card .toggle-auth {
+            margin-top: 20px;
+            color: var(--text-color);
+            font-size: 0.9em;
+        }
+
+        .auth-card .toggle-auth a {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .auth-card .error-message {
+            color: #ff6b6b;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .verification-message {
+            color: #FFC107;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+            padding: 10px;
+            background: rgba(255, 193, 7, 0.1);
+            border-radius: var(--border-radius);
+            display: none; /* Hidden by default */
+        }
+
+        /* Profile/Withdraw Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity var(--transition-speed), visibility var(--transition-speed);
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            color: var(--text-color);
+            position: relative;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .modal-content h3 {
+            margin-bottom: 25px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .modal-content .close-button {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.8em;
+            cursor: pointer;
+            color: var(--text-color);
+            transition: var(--transition-speed);
+        }
+
+        .modal-content .close-button:hover {
+            color: var(--accent-color);
+        }
+
+        .modal-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 1em;
+        }
+
+        .modal-item:last-of-type {
+            border-bottom: none;
+        }
+
+        .modal-item .label {
+            font-weight: 500;
+        }
+
+        .modal-item .value {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        .modal-content h4 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .modal-content form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal-content input, .modal-content select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--glass-border);
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-color);
+            border-radius: 8px;
+            font-size: 1em;
+            outline: none;
+            transition: border-color var(--transition-speed);
+        }
+
+        .modal-content input:focus, .modal-content select:focus {
+            border-color: var(--accent-color);
+        }
+
+        .modal-content input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .modal-content button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            transition: var(--transition-speed);
+        }
+
+        .modal-content button:hover:not(:disabled) {
+            opacity: 0.9;
+        }
+
+        .modal-content button:disabled {
+            background-color: rgba(255, 255, 255, 0.2);
+            cursor: not-allowed;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .withdraw-message {
+            margin-top: 15px;
+            text-align: center;
+            color: #FFC107;
+            font-size: 0.9em;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .top-bar-item {
+                font-size: 0.7em;
+            }
+
+            .top-bar-item .value {
+                font-size: 1em;
+            }
+
+            .action-bar {
+                right: 10px;
+                bottom: 15%;
+                gap: 15px;
+            }
+
+            .action-item i {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+
+    <!-- Authentication Container -->
+    <div class="auth-container" id="authContainer">
+        <div class="auth-card">
+            <h2 id="authTitle">Login</h2>
+            <div class="verification-message" id="emailVerificationMessage">
+                Please verify your email address. A verification link has been sent to your inbox.
+            </div>
+            <input type="email" id="authEmail" placeholder="Email">
+            <input type="password" id="authPassword" placeholder="Password">
+            <button class="btn-primary" id="authButton">Login</button>
+            <button class="btn-google" id="googleSignInButton">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google icon">
+                Sign in with Google
+            </button>
+            <p class="toggle-auth">
+                <span id="toggleAuthText">Don't have an account?</span>
+                <a href="#" id="toggleAuthLink">Sign Up</a>
+            </p>
+            <p class="error-message" id="authErrorMessage"></p>
+        </div>
+    </div>
+
+    <!-- Main App Content (Hidden until authenticated) -->
+    <div id="appContent" style="display: none;">
+        <!-- Top Profile Bar -->
+        <div class="top-bar">
+            <div class="top-bar-item" id="totalPointsBtn">
+                <span class="value" id="totalPoints">0</span>
+                <span>Points</span>
+            </div>
+            <div class="top-bar-item" id="totalMoneyBtn">
+                <span class="value" id="totalMoney">0.00</span>
+                <span>Taka</span>
+            </div>
+            <div class="top-bar-item">
+                <span>Daily Earnings</span>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="dailyEarningsProgressBar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Feed -->
+        <div class="video-feed" id="videoFeed">
+            <!-- Videos will be dynamically loaded here -->
+        </div>
+    </div>
+
+    <!-- Profile/Withdraw Modal -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <span class="close-button" id="closeProfileModal">&times;</span>
+            <h3>My Profile</h3>
+            <div class="modal-item">
+                <span class="label">Email:</span>
+                <span class="value" id="profileEmail"></span>
+            </div>
+            <div class="modal-item">
+                <span class="label">Total Points:</span>
+                <span class="value" id="modalTotalPoints">0</span>
+            </div>
+            <div class="modal-item">
+                <span class="label">Total Balance:</span>
+                <span class="value" id="modalTotalMoney">0.00 Taka</span>
+            </div>
+            <div class="modal-item">
+                <span class="label">Daily Earnings:</span>
+                <span class="value" id="modalDailyEarnings">0.00 Taka</span>
+            </div>
+
+            <h4>Withdraw Request</h4>
+            <form id="withdrawForm">
+                <label for="withdrawMethod">Method:</label>
+                <select id="withdrawMethod">
+                    <option value="Bkash">Bkash</option>
+                    <option value="Nagad">Nagad</option>
+                </select>
+                <label for="withdrawNumber">Number:</label>
+                <input type="text" id="withdrawNumber" placeholder="Enter Bkash/Nagad Number" required>
+                <label for="withdrawAmount">Amount (Taka):</label>
+                <input type="number" id="withdrawAmount" placeholder="Min 100 Taka" min="100" required>
+                <button type="submit" id="submitWithdrawBtn" disabled>Request Withdraw</button>
+            </form>
+            <p class="withdraw-message" id="withdrawEligibilityMessage"></p>
+            <p class="error-message" id="withdrawErrorMessage"></p>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics-compat.js"></script>
+
+    <script>
+        // =======================
+        // ADD YOUR FIREBASE CONFIG HERE
+        // =======================
+        
+const firebaseConfig = {
+  apiKey: "AIzaSyAcQB52oBgL8axH6D-xYc_4fEhpEU_zg40",
+  authDomain: "videreword.firebaseapp.com",
+  projectId: "videreword",
+  storageBucket: "videreword.firebasestorage.app",
+  messagingSenderId: "469229578580",
+  appId: "1:469229578580:web:9341a9c18bafd5c6de80c1"
+};
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Global variables
+        let currentUser = null;
+        let isSignUp = false;
+        let videos = [];
+        let videoWatchProgress = {}; // { videoId: { watchedTime: 0, rewrded: false, lastRewardCheck: 0 } }
+        const DAILY_EARNING_LIMIT_TAKA = 20;
+        const POINTS_PER_TAKA = 20;
+        const MIN_WATCH_TIME_SECONDS = 30; // Minimum watch time for reward eligibility
+        const REWARD_PERCENTAGE_WATCHED = 0.9; // 90% watched for reward
+
+        let isTabActive = true;
+        let devToolsOpen = false;
+        let lastScrollTime = 0;
+        let lastScrollTop = 0;
+        let currentVideoElement = null;
+
+        // Anti-Fraud Detection
+        window.addEventListener('blur', () => isTabActive = false);
+        window.addEventListener('focus', () => isTabActive = true);
+
+        const checkDevTools = () => {
+            const threshold = 160; // Common height/width for devtools
+            if (window.outerWidth - window.innerWidth > threshold ||
+                window.outerHeight - window.innerHeight > threshold) {
+                devToolsOpen = true;
+                console.warn('DevTools detected!');
+            } else {
+                devToolsOpen = false;
+            }
+        };
+        setInterval(checkDevTools, 1000); // Check every second
+
+        // Elements
+        const authContainer = document.getElementById('authContainer');
+        const authTitle = document.getElementById('authTitle');
+        const authEmail = document.getElementById('authEmail');
+        const authPassword = document.getElementById('authPassword');
+        const authButton = document.getElementById('authButton');
+        const googleSignInButton = document.getElementById('googleSignInButton');
+        const toggleAuthText = document.getElementById('toggleAuthText');
+        const toggleAuthLink = document.getElementById('toggleAuthLink');
+        const authErrorMessage = document.getElementById('authErrorMessage');
+        const emailVerificationMessage = document.getElementById('emailVerificationMessage');
+
+        const appContent = document.getElementById('appContent');
+        const videoFeed = document.getElementById('videoFeed');
+        const totalPointsSpan = document.getElementById('totalPoints');
+        const totalMoneySpan = document.getElementById('totalMoney');
+        const dailyEarningsProgressBar = document.getElementById('dailyEarningsProgressBar');
+        const totalPointsBtn = document.getElementById('totalPointsBtn');
+        const totalMoneyBtn = document.getElementById('totalMoneyBtn');
+
+        const profileModal = document.getElementById('profileModal');
+        const closeProfileModal = document.getElementById('closeProfileModal');
+        const profileEmail = document.getElementById('profileEmail');
+        const modalTotalPoints = document.getElementById('modalTotalPoints');
+        const modalTotalMoney = document.getElementById('modalTotalMoney');
+        const modalDailyEarnings = document.getElementById('modalDailyEarnings');
+        const withdrawMethod = document.getElementById('withdrawMethod');
+        const withdrawNumber = document.getElementById('withdrawNumber');
+        const withdrawAmount = document.getElementById('withdrawAmount');
+        const submitWithdrawBtn = document.getElementById('submitWithdrawBtn');
+        const withdrawEligibilityMessage = document.getElementById('withdrawEligibilityMessage');
+        const withdrawErrorMessage = document.getElementById('withdrawErrorMessage');
+
+        // Authentication Handlers
+        toggleAuthLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isSignUp = !isSignUp;
+            authTitle.textContent = isSignUp ? 'Sign Up' : 'Login';
+            authButton.textContent = isSignUp ? 'Sign Up' : 'Login';
+            toggleAuthText.textContent = isSignUp ? 'Already have an account?' : 'Don\'t have an account?';
+            toggleAuthLink.textContent = isSignUp ? 'Login' : 'Sign Up';
+            authErrorMessage.textContent = '';
+        });
+
+        authButton.addEventListener('click', async () => {
+            const email = authEmail.value;
+            const password = authPassword.value;
+            authErrorMessage.textContent = '';
+            emailVerificationMessage.style.display = 'none';
+
+            if (!email || !password) {
+                authErrorMessage.textContent = 'Please enter both email and password.';
+                return;
+            }
+
+            try {
+                if (isSignUp) {
+                    await auth.createUserWithEmailAndPassword(email, password);
+                    await auth.currentUser.sendEmailVerification();
+                    emailVerificationMessage.style.display = 'block';
+                    // Automatically log in the user after signup, but show verification message
+                    // User will need to verify email to access app content
+                } else {
+                    await auth.signInWithEmailAndPassword(email, password);
+                }
+            } catch (error) {
+                authErrorMessage.textContent = error.message;
+            }
+        });
+
+        googleSignInButton.addEventListener('click', async () => {
+            authErrorMessage.textContent = '';
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+                await auth.signInWithPopup(provider);
+            } catch (error) {
+                authErrorMessage.textContent = error.message;
+            }
+        });
+
+        auth.onAuthStateChanged(async (user) => {
+            currentUser = user;
+            if (user) {
+                if (user.emailVerified) {
+                    authContainer.style.display = 'none';
+                    appContent.style.display = 'flex';
+                    await loadUserProfile(user.uid);
+                    fetchVideos();
+                } else {
+                    authContainer.style.display = 'flex';
+                    appContent.style.display = 'none';
+                    emailVerificationMessage.style.display = 'block';
+                    authButton.style.display = 'none'; // Hide login/signup buttons
+                    googleSignInButton.style.display = 'none'; // Hide google sign-in
+                    authTitle.textContent = 'Email Verification Required';
+                    toggleAuthLink.style.display = 'none'; // Hide toggle
+                    authEmail.disabled = true;
+                    authPassword.disabled = true;
+                }
+            } else {
+                authContainer.style.display = 'flex';
+                appContent.style.display = 'none';
+                authEmail.value = '';
+                authPassword.value = '';
+                authErrorMessage.textContent = '';
+                emailVerificationMessage.style.display = 'none';
+                authButton.style.display = 'block';
+                googleSignInButton.style.display = 'flex';
+                authTitle.textContent = 'Login';
+                toggleAuthLink.style.display = 'inline';
+                authEmail.disabled = false;
+                authPassword.disabled = false;
+            }
+        });
+
+        // User Profile and Reward Logic
+        let userProfile = {
+            points: 0,
+            dailyEarnings: 0,
+            lastDailyReset: new Date().toISOString().split('T')[0] // YYYY-MM-DD
+        };
+
+        async function loadUserProfile(uid) {
+            const userDocRef = db.collection('users').doc(uid);
+            const doc = await userDocRef.get();
+            if (doc.exists) {
+                userProfile = doc.data();
+                // Check and reset daily earnings if a new day
+                const today = new Date().toISOString().split('T')[0];
+                if (userProfile.lastDailyReset !== today) {
+                    userProfile.dailyEarnings = 0;
+                    userProfile.lastDailyReset = today;
+                    await userDocRef.update({
+                        dailyEarnings: 0,
+                        lastDailyReset: today
+                    });
+                }
+            } else {
+                // Create new profile for new user
+                await userDocRef.set(userProfile);
+            }
+            updateUIProfile();
+        }
+
+        function updateUIProfile() {
+            const totalTaka = userProfile.points / POINTS_PER_TAKA;
+            totalPointsSpan.textContent = userProfile.points;
+            totalMoneySpan.textContent = totalTaka.toFixed(2);
+            
+            const dailyProgress = (userProfile.dailyEarnings / DAILY_EARNING_LIMIT_TAKA) * 100;
+            dailyEarningsProgressBar.style.width = `${Math.min(dailyProgress, 100)}%`;
+
+            // Update modal profile
+            if (currentUser) {
+                profileEmail.textContent = currentUser.email;
+            }
+            modalTotalPoints.textContent = userProfile.points;
+            modalTotalMoney.textContent = totalTaka.toFixed(2) + ' Taka';
+            modalDailyEarnings.textContent = userProfile.dailyEarnings.toFixed(2) + ' Taka';
+
+            // Withdraw eligibility
+            if (totalTaka >= 100) {
+                submitWithdrawBtn.disabled = false;
+                withdrawEligibilityMessage.textContent = '';
+            } else {
+                submitWithdrawBtn.disabled = true;
+                withdrawEligibilityMessage.textContent = `Minimum 100 Taka required for withdraw. You have ${totalTaka.toFixed(2)} Taka.`;
+            }
+        }
+
+        async function rewardUser(videoId) {
+            if (!currentUser || !currentUser.uid) {
+                console.error("User not authenticated for reward.");
+                return;
+            }
+            if (devToolsOpen) {
+                console.warn("Reward blocked: DevTools open.");
+                return;
+            }
+            if (!isTabActive) {
+                console.warn("Reward blocked: Tab inactive.");
+                return;
+            }
+            if (userProfile.dailyEarnings >= DAILY_EARNING_LIMIT_TAKA) {
+                console.warn("Reward blocked: Daily earning limit reached.");
+                return;
+            }
+            if (videoWatchProgress[videoId] && videoWatchProgress[videoId].rewarded) {
+                console.warn("Reward blocked: Already rewarded for this video.");
+                return;
+            }
+
+            // --- CALL CLOUD FUNCTION HERE ---
+            // This is a placeholder for a secure server-side call.
+            // For client-side simulation, we'll proceed, but in production,
+            // this should trigger a Firebase Cloud Function to validate and process rewards.
+            console.log(`Simulating reward for video: ${videoId} for user: ${currentUser.uid}`);
+
+            try {
+                // Simulate Cloud Function response (e.g., 5 points)
+                const rewardPoints = 5;
+                const rewardTaka = rewardPoints / POINTS_PER_TAKA;
+
+                // Update user profile locally
+                userProfile.points += rewardPoints;
+                userProfile.dailyEarnings += rewardTaka;
+                
+                // Mark video as rewarded
+                if (videoWatchProgress[videoId]) {
+                    videoWatchProgress[videoId].rewarded = true;
+                }
+
+                // Update Firestore (this would be done by the Cloud Function in a real app)
+                await db.collection('users').doc(currentUser.uid).update({
+                    points: firebase.firestore.FieldValue.increment(rewardPoints),
+                    dailyEarnings: firebase.firestore.FieldValue.increment(rewardTaka),
+                    lastDailyReset: userProfile.lastDailyReset // Ensure daily reset date is maintained
+                });
+                
+                console.log(`Rewarded ${rewardPoints} points for video ${videoId}.`);
+                updateUIProfile(); // Update UI after reward
+            } catch (error) {
+                console.error("Error rewarding user (simulated):", error);
+            }
+        }
+
+        // Video Feed and Playback
+        async function fetchVideos() {
+            videoFeed.innerHTML = '<div class="loading-spinner"></div>';
+            try {
+                const snapshot = await db.collection('videos').get();
+                videos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderVideos();
+            } catch (error) {
+                console.error("Error fetching videos:", error);
+                videoFeed.innerHTML = '<p style="text-align: center; margin-top: 50px;">Failed to load videos.</p>';
+            }
+        }
+
+        function renderVideos() {
+            videoFeed.innerHTML = '';
+            videos.forEach(video => {
+                const videoContainer = document.createElement('div');
+                videoContainer.className = 'video-container';
+                videoContainer.dataset.videoId = video.id;
+
+                const videoElement = document.createElement('video');
+                videoElement.src = video.url;
+                videoElement.loop = true;
+                videoElement.preload = 'metadata'; // Preload metadata for duration
+                videoElement.muted = true; // Muted for autoplay
+                videoElement.playsInline = true; // For iOS autoplay
+                videoElement.addEventListener('loadedmetadata', () => {
+                    if (!videoWatchProgress[video.id]) {
+                        videoWatchProgress[video.id] = {
+                            watchedTime: 0,
+                            rewarded: false,
+                            lastRewardCheck: 0,
+                            duration: videoElement.duration // Store duration
+                        };
+                    } else {
+                        videoWatchProgress[video.id].duration = videoElement.duration;
+                    }
+                });
+                
+                videoContainer.appendChild(videoElement);
+
+                const actionBar = document.createElement('div');
+                actionBar.className = 'action-bar';
+                actionBar.innerHTML = `
+                    <div class="action-item like-btn" data-video-id="${video.id}">
+                        <i class="fas fa-heart"></i>
+                        <span>${video.likes || 0}</span>
+                    </div>
+                    <div class="action-item comment-btn" data-video-id="${video.id}">
+                        <i class="fas fa-comment-dots"></i>
+                        <span>${video.comments || 0}</span>
+                    </div>
+                    <div class="action-item follow-btn" data-video-id="${video.id}">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Follow</span>
+                    </div>
+                    <div class="action-item share-btn" data-video-id="${video.id}">
+                        <i class="fas fa-share"></i>
+                        <span>Share</span>
+                    </div>
+                `;
+                videoContainer.appendChild(actionBar);
+
+                videoFeed.appendChild(videoContainer);
+            });
+
+            // Initialize Intersection Observer after videos are rendered
+            initializeVideoObserver();
+        }
+
+        let videoObserver;
+        function initializeVideoObserver() {
+            if (videoObserver) {
+                videoObserver.disconnect();
+            }
+
+            videoObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const videoElement = entry.target.querySelector('video');
+                    const videoId = entry.target.dataset.videoId;
+
+                    if (entry.isIntersecting) {
+                        if (currentVideoElement && currentVideoElement !== videoElement) {
+                            currentVideoElement.pause();
+                        }
+                        videoElement.play().catch(e => console.warn("Video autoplay failed:", e));
+                        currentVideoElement = videoElement;
+                        startWatchTimeTracking(videoId, videoElement);
+                    } else {
+                        videoElement.pause();
+                        stopWatchTimeTracking(videoId);
+                    }
+                });
+            }, { threshold: 0.8 }); // Trigger when 80% of the video is visible
+
+            document.querySelectorAll('.video-container').forEach(container => {
+                videoObserver.observe(container);
+            });
+        }
+
+        let watchTimeIntervals = {}; // { videoId: intervalId }
+
+        function startWatchTimeTracking(videoId, videoElement) {
+            if (watchTimeIntervals[videoId]) {
+                clearInterval(watchTimeIntervals[videoId]);
+            }
+
+            videoWatchProgress[videoId].watchedTime = 0; // Reset for new view
+            videoWatchProgress[videoId].lastRewardCheck = 0; // Reset last check
+            
+            watchTimeIntervals[videoId] = setInterval(() => {
+                if (isTabActive && !devToolsOpen && !videoElement.paused && !videoElement.ended && videoElement.readyState >= 3) {
+                    const currentTime = videoElement.currentTime;
+                    const duration = videoWatchProgress[videoId].duration;
+                    const minRewardTime = duration * REWARD_PERCENTAGE_WATCHED;
+
+                    if (currentTime > videoWatchProgress[videoId].watchedTime) {
+                        videoWatchProgress[videoId].watchedTime = currentTime;
+                    }
+
+                    // Check for reward eligibility
+                    if (videoWatchProgress[videoId].watchedTime >= minRewardTime && 
+                        videoWatchProgress[videoId].watchedTime >= MIN_WATCH_TIME_SECONDS &&
+                        !videoWatchProgress[videoId].rewarded &&
+                        (currentTime - videoWatchProgress[videoId].lastRewardCheck) >= 1) // Check roughly every second after initial
+                    {
+                        rewardUser(videoId);
+                        videoWatchProgress[videoId].lastRewardCheck = currentTime;
+                    }
+                }
+            }, 500); // Check every 500ms
+        }
+
+        function stopWatchTimeTracking(videoId) {
+            if (watchTimeIntervals[videoId]) {
+                clearInterval(watchTimeIntervals[videoId]);
+                delete watchTimeIntervals[videoId];
+            }
+        }
+
+        // Fast scroll detection
+        videoFeed.addEventListener('scroll', () => {
+            const currentTime = new Date().getTime();
+            if (currentTime - lastScrollTime < 100 && Math.abs(videoFeed.scrollTop - lastScrollTop) > window.innerHeight / 2) {
+                // Detected fast scroll (more than half a screen in less than 100ms)
+                console.warn("Fast scroll detected! Rewards might be blocked.");
+                // Potentially set a flag to block rewards for a short period
+                // For this example, we'll just log a warning.
+            }
+            lastScrollTime = currentTime;
+            lastScrollTop = videoFeed.scrollTop;
+        });
+
+        // Action Bar Interactions (Placeholder)
+        videoFeed.addEventListener('click', (e) => {
+            const likeBtn = e.target.closest('.like-btn');
+            if (likeBtn) {
+                likeBtn.classList.toggle('liked');
+                // Simulate like count update
+                const countSpan = likeBtn.querySelector('span');
+                let currentLikes = parseInt(countSpan.textContent);
+                if (likeBtn.classList.contains('liked')) {
+                    countSpan.textContent = currentLikes + 1;
+                } else {
+                    countSpan.textContent = currentLikes - 1;
+                }
+                console.log(`Video ${likeBtn.dataset.videoId} liked/unliked`);
+            }
+
+            const commentBtn = e.target.closest('.comment-btn');
+            if (commentBtn) {
+                alert(`Commenting on video ${commentBtn.dataset.videoId}`);
+            }
+            const followBtn = e.target.closest('.follow-btn');
+            if (followBtn) {
+                alert(`Following user for video ${followBtn.dataset.videoId}`);
+            }
+            const shareBtn = e.target.closest('.share-btn');
+            if (shareBtn) {
+                alert(`Sharing video ${shareBtn.dataset.videoId}`);
+            }
+        });
+
+        // Profile Modal Logic
+        totalPointsBtn.addEventListener('click', () => {
+            profileModal.classList.add('active');
+            updateUIProfile(); // Ensure profile data is fresh
+        });
+        totalMoneyBtn.addEventListener('click', () => {
+            profileModal.classList.add('active');
+            updateUIProfile(); // Ensure profile data is fresh
+        });
+
+        closeProfileModal.addEventListener('click', () => {
+            profileModal.classList.remove('active');
+        });
+
+        profileModal.addEventListener('click', (e) => {
+            if (e.target === profileModal) {
+                profileModal.classList.remove('active');
+            }
+        });
+
+        // Withdraw Form Logic
+        withdrawAmount.addEventListener('input', () => {
+            const amount = parseFloat(withdrawAmount.value);
+            const totalTaka = userProfile.points / POINTS_PER_TAKA;
+            if (amount >= 100 && amount <= totalTaka) {
+                submitWithdrawBtn.disabled = false;
+                withdrawErrorMessage.textContent = '';
+            } else {
+                submitWithdrawBtn.disabled = true;
+                if (amount < 100) {
+                    withdrawErrorMessage.textContent = 'Minimum withdraw amount is 100 Taka.';
+                } else if (amount > totalTaka) {
+                    withdrawErrorMessage.textContent = 'Insufficient balance.';
+                }
+            }
+        });
+
+        document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            withdrawErrorMessage.textContent = '';
+
+            if (!currentUser) {
+                withdrawErrorMessage.textContent = 'You must be logged in to withdraw.';
+                return;
+            }
+
+            const method = withdrawMethod.value;
+            const number = withdrawNumber.value.trim();
+            const amount = parseFloat(withdrawAmount.value);
+            const totalTaka = userProfile.points / POINTS_PER_TAKA;
+
+            if (!number || amount < 100 || amount > totalTaka) {
+                withdrawErrorMessage.textContent = 'Please check your withdraw details.';
+                return;
+            }
+
+            try {
+                await db.collection('withdrawRequests').add({
+                    userId: currentUser.uid,
+                    email: currentUser.email,
+                    method: method,
+                    number: number,
+                    amount: amount,
+                    status: 'pending',
+                    requestDate: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Deduct points locally and from Firestore
+                const pointsToDeduct = amount * POINTS_PER_TAKA;
+                userProfile.points -= pointsToDeduct;
+                await db.collection('users').doc(currentUser.uid).update({
+                    points: firebase.firestore.FieldValue.increment(-pointsToDeduct)
+                });
+
+                updateUIProfile();
+                alert('Withdraw request submitted successfully!');
+                profileModal.classList.remove('active');
+                document.getElementById('withdrawForm').reset();
+            } catch (error) {
+                console.error("Error submitting withdraw request:", error);
+                withdrawErrorMessage.textContent = 'Failed to submit withdraw request: ' + error.message;
+            }
+        });
+
+    </script>
+</body>
+</html>
